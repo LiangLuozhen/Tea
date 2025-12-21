@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>game_instruction</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body,
+    html {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      background-color: #fff;
+    }
+
+    /* 电脑端居中容器 */
+    .desktop-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #fff;
+    }
+
+    /* 移动端窗口容器 */
+    .mobile-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 400px;
+      max-height: 800px;
+      margin: 0 auto;
+      overflow: hidden;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 主容器 */
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-image: url('./picture/4/bg.gif');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      cursor: pointer;
+    }
+
+    /* 1.gif 层 */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('./picture/4/1.gif');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 1;
+    }
+
+    /* 2.gif 层 - 优化自适应 */
+    .image-2 {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 95%;
+      height: auto;
+      transform: translateX(-50%);
+      background-image: url('./picture/4/2.gif');
+      background-size: contain;
+      background-position: top center;
+      background-repeat: no-repeat;
+      z-index: 2;
+    }
+
+    /* 3.gif 层 - 优化自适应 */
+    .image-3 {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('./picture/4/3.gif');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 3;
+    }
+
+    /* 按钮通用样式 */
+    .music-btn,
+    .return-btn {
+      position: absolute;
+      top: 3%;
+      width: 12%;
+      height: auto;
+      max-width: 50px;
+      max-height: 50px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .music-btn {
+      left: 5%;
+    }
+
+    .return-btn {
+      right: 5%;
+    }
+
+    .music-btn img,
+    .return-btn img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* 电脑端优化 */
+    @media (min-width: 768px) {
+      .mobile-container {
+        width: 400px;
+        height: 800px;
+        border-radius: 20px;
+        overflow: hidden;
+      }
+
+      /* 优化2.gif在电脑端的显示 */
+      .image-2 {
+        width: 95%;
+        height: auto;
+        max-width: 380px;
+        /* 400 * 0.95 = 380px */
+        max-height: calc(800px * 0.95);
+        /* 限制最大高度 */
+      }
+    }
+
+    /* 平板端优化 */
+    @media (min-width: 481px) and (max-width: 767px) {
+      .mobile-container {
+        max-width: 90vw;
+        max-height: 90vh;
+        margin: 5vh auto;
+      }
+    }
+
+    /* 小屏幕手机优化 */
+    @media (max-width: 480px) {
+      .mobile-container {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      /* 在小屏幕上调整2.gif大小 */
+      .image-2 {
+        width: 90%;
+        /* 小屏幕上稍微减小 */
+      }
+    }
+
+    /* 超小屏幕优化 */
+    @media (max-width: 320px) {
+      .image-2 {
+        width: 85%;
+        /* 进一步减小 */
+      }
+    }
+
+    /* 横屏模式优化 */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .mobile-container {
+        max-width: 80vh;
+        max-height: 80vw;
+      }
+
+      .image-2 {
+        width: 80%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-wrapper">
+    <div class="mobile-container">
+      <div class="container" id="mainContainer">
+        <div class="overlay"></div>
+        <div class="image-2"></div>
+        <div class="image-3"></div>
+
+        <div class="music-btn" id="musicButton">
+          <img src="./picture/button/music.gif" alt="音乐按钮" id="musicIcon">
+        </div>
+
+        <div class="return-btn" id="returnButton">
+          <img src="./picture/button/return.gif" alt="返回按钮">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 音乐按钮切换功能
+    document.getElementById('musicButton').addEventListener('click', function (event) {
+      event.stopPropagation();
+
+      const musicIcon = document.getElementById('musicIcon');
+      const currentSrc = musicIcon.getAttribute('src');
+
+      if (currentSrc === './picture/button/music.gif') {
+        musicIcon.src = './picture/button/no_music.gif';
+      } else {
+        musicIcon.src = './picture/button/music.gif';
+      }
+    });
+
+    // 返回按钮功能
+    document.getElementById('returnButton').addEventListener('click', function (event) {
+      event.stopPropagation();
+      window.location.href = '3.html';
+    });
+
+    // 页面点击跳转功能
+    document.getElementById('mainContainer').addEventListener('click', function () {
+      window.location.href = 'map.html';
+    });
+  </script>
+</body>
+
+</html>
