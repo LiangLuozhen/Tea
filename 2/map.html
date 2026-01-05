@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>地图</title>
+  <!-- 引入jQuery -->
+  <script src="./jQuery/jquery.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body,
+    html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      background-color: #fff;
+    }
+
+    /* 电脑端居中容器 */
+    .desktop-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #fff;
+    }
+
+    /* 移动端窗口容器 */
+    .mobile-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 400px;
+      max-height: 800px;
+      margin: 0 auto;
+      overflow: hidden;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 地图容器 */
+    .map-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 地图包装器 - 用于滑动 */
+    .map-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: auto;
+      height: 100%;
+      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    /* 地图图片 */
+    .map-image {
+      height: 100%;
+      width: auto;
+      display: block;
+    }
+
+    /* 底部提示 */
+    .hint-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background-color: rgba(0, 0, 0, 0.85);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      transform: translateY(20px);
+    }
+
+    .hint-bar.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hint-text {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .music-btn {
+      position: absolute;
+      top: 3%;
+      left: 5%;
+      width: 12%;
+      height: auto;
+      max-width: 50px;
+      max-height: 50px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .music-btn img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* 滑动指示器 */
+    .slide-indicator {
+      position: absolute;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 40px;
+      background-image: url('./picture/button/arrow-left.gif');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      z-index: 5;
+      opacity: 0;
+      animation: slideHint 2s infinite;
+    }
+
+    .slide-indicator.show {
+      opacity: 1;
+    }
+
+    @keyframes slideHint {
+
+      0%,
+      100% {
+        transform: translateX(-50%) translateX(0);
+      }
+
+      50% {
+        transform: translateX(-50%) translateX(10px);
+      }
+    }
+
+    /* 电脑端优化 */
+    @media (min-width: 768px) {
+      .mobile-container {
+        width: 400px;
+        height: 800px;
+        border-radius: 20px;
+        overflow: hidden;
+      }
+
+      .hint-text {
+        font-size: 16px;
+      }
+    }
+
+    /* 平板端优化 */
+    @media (min-width: 481px) and (max-width: 767px) {
+      .mobile-container {
+        max-width: 90vw;
+        max-height: 90vh;
+        margin: 5vh auto;
+      }
+    }
+
+    /* 手机端优化 */
+    @media (max-width: 480px) {
+      .desktop-wrapper {
+        padding: 0;
+      }
+
+      .mobile-container {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .hint-text {
+        font-size: 5vw;
+      }
+
+      .slide-indicator {
+        bottom: 80px;
+      }
+    }
+
+    /* 横屏模式优化 */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .mobile-container {
+        max-width: 80vh;
+        max-height: 80vw;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-wrapper">
+    <div class="mobile-container">
+      <div class="map-container" id="mapContainer">
+        <div class="map-wrapper" id="mapWrapper">
+          <img src="./picture/map/map.gif" alt="地图" class="map-image" id="mapImage">
+        </div>
+
+        <div class="hint-bar" id="hintBar">
+          <div class="hint-text" id="hintText"></div>
+        </div>
+
+        <!-- 滑动指示器 -->
+        <div class="slide-indicator" id="slideIndicator"></div>
+
+        <div class="music-btn" id="musicButton">
+          <img src="./picture/button/music.gif" alt="音乐按钮" id="musicIcon">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      // 状态管理变量
+      let currentX = 0;
+      let isReturningFrom5 = false;
+      let isLocked = false;
+      let containerWidth, imageWidth, maxScroll, middlePosition;
+      let isDragging = false;
+      let startX, scrollLeft;
+
+      const $mapContainer = $('#mapContainer');
+      const $mapWrapper = $('#mapWrapper');
+      const $mapImage = $('#mapImage');
+      const $hintBar = $('#hintBar');
+      const $hintText = $('#hintText');
+      const $slideIndicator = $('#slideIndicator');
+
+      // 预加载图片
+      preloadImages([
+        './picture/map/map.gif',
+        './picture/button/music.gif',
+        './picture/button/no_music.gif',
+        './picture/button/arrow-left.gif'
+      ]);
+
+      // 初始化地图
+      function initMap() {
+        containerWidth = $mapContainer.width();
+        imageWidth = $mapImage.width();
+        maxScroll = imageWidth - containerWidth;
+        middlePosition = maxScroll / 2;
+
+        // 检查sessionStorage状态
+        checkSessionStorage();
+
+        // 设置初始位置
+        if (isReturningFrom5) {
+          currentX = middlePosition;
+          $mapWrapper.css('transform', `translateX(-${currentX}px)`);
+          isLocked = false; // 从5返回后解除锁定，可以继续滑动
+
+          // 延迟显示滑动提示
+          setTimeout(() => {
+            $slideIndicator.addClass('show');
+            setTimeout(() => {
+              $slideIndicator.removeClass('show');
+            }, 3000);
+          }, 1000);
+        } else {
+          currentX = 0;
+          $mapWrapper.css('transform', 'translateX(0px)');
+          isLocked = false;
+
+          // 初始显示滑动提示
+          setTimeout(() => {
+            $slideIndicator.addClass('show');
+            setTimeout(() => {
+              $slideIndicator.removeClass('show');
+            }, 3000);
+          }, 500);
+        }
+
+        $hintBar.removeClass('show');
+      }
+
+      // 检查sessionStorage状态
+      function checkSessionStorage() {
+        const isFrom5 = sessionStorage.getItem('returnFrom5');
+        if (isFrom5 === 'true') {
+          isReturningFrom5 = true;
+          sessionStorage.removeItem('returnFrom5');
+        }
+      }
+
+      // 音乐按钮切换功能
+      $('#musicButton').on('click', function (event) {
+        event.stopPropagation();
+        event.preventDefault();
+
+        const $musicIcon = $('#musicIcon');
+        const currentSrc = $musicIcon.attr('src');
+
+        if (currentSrc === './picture/button/music.gif') {
+          $musicIcon.attr('src', './picture/button/no_music.gif');
+        } else {
+          $musicIcon.attr('src', './picture/button/music.gif');
+        }
+
+        return false;
+      });
+
+      // 触摸/鼠标事件处理 - 修复事件绑定
+      function startDrag(e) {
+        if (isLocked) return;
+
+        isDragging = true;
+
+        // 获取初始位置
+        const pageX = e.type === 'touchstart' ? e.originalEvent.touches[0].pageX : e.pageX;
+        startX = pageX - $mapContainer.offset().left;
+        scrollLeft = currentX;
+
+        // 隐藏滑动提示
+        $slideIndicator.removeClass('show');
+      }
+
+      function drag(e) {
+        if (!isDragging || isLocked) return;
+        e.preventDefault();
+
+        const pageX = e.type === 'touchmove' ? e.originalEvent.touches[0].pageX : e.pageX;
+        const x = pageX - $mapContainer.offset().left;
+        const walk = (x - startX);
+
+        // 只允许向左滑动
+        let newX = scrollLeft - walk;
+
+        // 限制滑动范围
+        if (isReturningFrom5) {
+          newX = Math.max(currentX, Math.min(maxScroll, newX));
+        } else {
+          newX = Math.max(0, Math.min(maxScroll, newX));
+        }
+
+        // 应用变换
+        $mapWrapper.css('transform', `translateX(-${newX}px)`);
+
+        // 检查是否到达中间位置（只针对第一次滑动）
+        if (!isReturningFrom5 && newX >= middlePosition - 10) {
+          newX = middlePosition;
+          $mapWrapper.css('transform', `translateX(-${newX}px)`);
+          currentX = newX;
+
+          showHint('点击商铺继续');
+          isLocked = true;
+          isDragging = false;
+          return;
+        }
+
+        // 检查是否到达最右侧（针对从5返回后的滑动）
+        if (isReturningFrom5 && newX >= maxScroll - 10) {
+          newX = maxScroll;
+          $mapWrapper.css('transform', `translateX(-${newX}px)`);
+          currentX = newX;
+
+          showHint('点击茶肆继续');
+          isLocked = true;
+          isDragging = false;
+          return;
+        }
+
+        currentX = newX;
+      }
+
+      function endDrag() {
+        if (!isDragging) return;
+        isDragging = false;
+
+        if (isLocked) return;
+
+        // 检查是否自然滑动到中间位置
+        if (!isReturningFrom5 && currentX >= middlePosition - 10) {
+          currentX = middlePosition;
+          $mapWrapper.css('transform', `translateX(-${currentX}px)`);
+          showHint('点击商铺继续');
+          isLocked = true;
+        }
+
+        // 检查是否自然滑动到最右侧
+        if (isReturningFrom5 && currentX >= maxScroll - 10) {
+          currentX = maxScroll;
+          $mapWrapper.css('transform', `translateX(-${currentX}px)`);
+          showHint('点击茶肆继续');
+          isLocked = true;
+        }
+      }
+
+      function showHint(text) {
+        $hintText.text(text);
+        $hintBar.addClass('show');
+      }
+
+      // 点击地图跳转
+      $mapContainer.on('click', function (e) {
+        if ($(e.target).closest('#musicButton').length > 0) {
+          return;
+        }
+
+        if ($hintBar.hasClass('show')) {
+          const text = $hintText.text();
+
+          if (text === '点击商铺继续') {
+            // 保存状态，标记从5返回
+            sessionStorage.setItem('returnFrom5', 'true');
+            // 添加点击反馈
+            $(this).css('opacity', '0.95');
+            setTimeout(() => {
+              window.location.href = '5.html';
+            }, 200);
+          } else if (text === '点击茶肆继续') {
+            $(this).css('opacity', '0.95');
+            setTimeout(() => {
+              window.location.href = '6.html';
+            }, 200);
+          }
+        }
+      });
+
+      // 绑定事件 - 修复事件绑定问题
+      $mapContainer.on('mousedown touchstart', startDrag);
+      $mapContainer.on('mousemove touchmove', drag);
+      $(document).on('mouseup touchend', endDrag);
+      $mapContainer.on('mouseleave', function () {
+        if (isDragging) {
+          endDrag();
+        }
+      });
+
+      // 图片加载完成时初始化
+      if ($mapImage[0].complete) {
+        initMap();
+      } else {
+        $mapImage.on('load', initMap);
+      }
+
+      // 窗口大小变化时重新初始化
+      $(window).on('resize', initMap);
+
+      // 预加载图片函数
+      function preloadImages(urls) {
+        urls.forEach(function (url) {
+          const img = new Image();
+          img.src = url;
+        });
+      }
+
+      // 添加页面加载动画
+      $mapContainer.css('opacity', 0).animate({ opacity: 1 }, 600);
+    });
+  </script>
+</body>
+
+</html>

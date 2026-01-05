@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>opening</title>
+  <!-- 引入本地jQuery -->
+  <script src="./jQuery/jquery.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body,
+    html {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      background-color: #fff;
+    }
+
+    /* 电脑端居中容器 */
+    .desktop-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #fff;
+    }
+
+    /* 移动端窗口容器 */
+    .mobile-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 400px;
+      max-height: 800px;
+      margin: 0 auto;
+      overflow: hidden;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 主容器 */
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-image: url('./picture/1/2.gif');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      cursor: pointer;
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('./picture/1/1d.gif');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .music-btn {
+      position: absolute;
+      top: 3%;
+      left: 5%;
+      width: 12%;
+      height: auto;
+      max-width: 50px;
+      max-height: 50px;
+      z-index: 10;
+    }
+
+    .music-btn img {
+      width: 100%;
+      height: auto;
+      display: block;
+      cursor: pointer;
+    }
+
+    .start-text {
+      position: absolute;
+      bottom: 9%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #fff;
+      font-size: 6vw;
+      font-weight: bold;
+      text-align: center;
+      white-space: nowrap;
+      background: transparent;
+      border: none;
+      padding: 0;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* 电脑端优化 */
+    @media (min-width: 768px) {
+      .mobile-container {
+        width: 400px;
+        height: 800px;
+        border-radius: 20px;
+        overflow: hidden;
+      }
+
+      .start-text {
+        font-size: 30px;
+      }
+    }
+
+    /* 平板端优化 */
+    @media (min-width: 481px) and (max-width: 767px) {
+      .mobile-container {
+        max-width: 90vw;
+        max-height: 90vh;
+        margin: 5vh auto;
+      }
+    }
+
+    /* 手机端优化 */
+    @media (max-width: 480px) {
+      .desktop-wrapper {
+        padding: 0;
+      }
+
+      .mobile-container {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .start-text {
+        font-size: 5vw;
+      }
+    }
+
+    /* 超小屏幕优化 */
+    @media (max-width: 320px) {
+      .start-text {
+        font-size: 14px;
+      }
+    }
+
+    /* 横屏模式优化 */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .mobile-container {
+        max-width: 80vh;
+        max-height: 80vw;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-wrapper">
+    <div class="mobile-container">
+      <div class="container" id="mainContainer">
+        <div class="overlay"></div>
+        <div class="music-btn" id="musicButton">
+          <img src="./picture/button/music.gif" alt="音乐按钮" id="musicIcon">
+        </div>
+        <div class="start-text">点击开始探索</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      // 预加载图片以提高性能
+      preloadImages([
+        './picture/1/2.gif',
+        './picture/1/1d.jpg',
+        './picture/button/music.gif',
+        './picture/button/no_music.gif',
+        './picture/2/1.gif',
+        './picture/2/2d.gif'
+      ]);
+
+      // 修复音乐按钮事件 - 防止触发页面跳转
+      $('#musicButton').on('click', function (event) {
+        // 阻止事件冒泡到父容器
+        event.stopPropagation();
+        event.preventDefault();
+
+        const $musicIcon = $('#musicIcon');
+        const currentSrc = $musicIcon.attr('src');
+
+        if (currentSrc === './picture/button/music.gif') {
+          $musicIcon.attr('src', './picture/button/no_music.gif');
+        } else {
+          $musicIcon.attr('src', './picture/button/music.gif');
+        }
+
+        return false; // 进一步防止事件传播
+      });
+
+      // 页面点击跳转功能 - 但排除音乐按钮
+      $('#mainContainer').on('click', function (event) {
+        // 检查点击的目标是否在音乐按钮内
+        if ($(event.target).closest('#musicButton').length > 0) {
+          // 如果点击的是音乐按钮或其子元素，不执行跳转
+          return;
+        }
+
+        // 添加点击反馈效果
+        $(this).css('opacity', '0.95');
+
+        setTimeout(function () {
+          window.location.href = '2.html';
+        }, 150);
+      });
+
+      // 预加载图片函数
+      function preloadImages(urls) {
+        urls.forEach(function (url) {
+          const img = new Image();
+          img.src = url;
+        });
+      }
+
+      // 添加页面加载动画效果
+      $('.container').css('opacity', '0').animate({ opacity: 1 }, 600);
+      $('.start-text').css('opacity', '0').delay(300).animate({ opacity: 1 }, 400);
+
+      // 添加呼吸动画效果到文字
+      function textBreathingEffect() {
+        $('.start-text').animate({ opacity: 0.7 }, 800, function () {
+          $(this).animate({ opacity: 1 }, 800, textBreathingEffect);
+        });
+      }
+
+      // 延迟启动呼吸动画
+      setTimeout(textBreathingEffect, 1000);
+    });
+  </script>
+</body>
+
+</html>
